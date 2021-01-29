@@ -2,7 +2,10 @@
 #前言
  >实现：根据一张输入的图片，获取图片上的所有像素分析，并计算出一个颜色数组。具体步骤有：
 输入图片→图片转换→颜色获取→颜色筛选→我们要的颜色数组
-[github地址](https://github.com/Spriea/SKAiBackground)
+[简书地址](https://www.jianshu.com/p/9001d6f5508e)
+
+#####Demo展示
+![demo.jpg](https://upload-images.jianshu.io/upload_images/2013062-a2ba21345dec9062.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/500)
 
 ##输入图片
 输入图片后，由于图片太大，所有我们先将图片进行缩放操作，减少计算量。
@@ -157,5 +160,3 @@ for (int x = 0; x < thumbSize.width; x ++) {
         }
     }
 ```
-#####Demo展示
-![demo.jpg](https://upload-images.jianshu.io/upload_images/2013062-a2ba21345dec9062.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/500)
