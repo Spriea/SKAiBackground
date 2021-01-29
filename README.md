@@ -5,7 +5,7 @@
 [简书地址](https://www.jianshu.com/p/9001d6f5508e)
 
 #####Demo展示
-![demo.jpg](https://upload-images.jianshu.io/upload_images/2013062-a2ba21345dec9062.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/500)
+![demo.jpg](https://upload-images.jianshu.io/upload_images/2013062-a2ba21345dec9062.jpg?imageMogr2/auto-orient/strip|imageView2/2/w/512)
 
 ##输入图片
 输入图片后，由于图片太大，所有我们先将图片进行缩放操作，减少计算量。
