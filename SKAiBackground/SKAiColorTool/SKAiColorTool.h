@@ -12,8 +12,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface SKAiColorTool : NSObject
 
-//根据图片获取图片的主色调,返回智能颜色数组
+// 根据图片获取图片的主色调,返回智能颜色数组
 + (NSMutableArray *)mostColor:(UIImage *)image;
+
+// 根据一张图片获取图片中最多的颜色
++ (UIColor *)mostColorSingle:(UIImage*)image;
 
 @end
 
