@@ -11,29 +11,8 @@
 
 //根据图片获取图片的主色调
 + (NSMutableArray *)mostColor:(UIImage*)image{
-    // 1.此处缩放图片，缩小图片大小，提升计算速度
-    CGFloat scale = [UIScreen mainScreen].scale;
     CGSize thumbSize = CGSizeMake(kImgW, image.size.height/image.size.width*kImgW);
-    UIGraphicsBeginImageContextWithOptions(thumbSize, NO, scale);
-    [image drawInRect:CGRectMake(0, 0, thumbSize.width, thumbSize.height)];
-    image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    
-    // 2.将图片通过颜色空间转换为二进制数据。
-    int bitmapInfo = kCGBitmapByteOrderDefault | kCGImageAlphaPremultipliedLast;
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-    CGContextRef context = CGBitmapContextCreate(NULL,
-                                                 thumbSize.width,
-                                                 thumbSize.height,
-                                                 8,//bits per component
-                                                 thumbSize.width*4,
-                                                 colorSpace,
-                                                 bitmapInfo);
-    
-    CGRect drawRect = CGRectMake(0, 0, thumbSize.width, thumbSize.height);
-    CGContextDrawImage(context, drawRect, image.CGImage);
-    CGColorSpaceRelease(colorSpace);
-    unsigned char* data = CGBitmapContextGetData (context);
+    unsigned char* data = [self dataFromImage:image thumbSize:thumbSize];
     if (data == NULL) return nil;
     
     NSUInteger LimitCount = 5; // 限制颜色数量，总颜色数量小于LimitCount则抛弃
@@ -64,7 +43,6 @@
             }
         }
     }
-    CGContextRelease(context);
     
     // 4.取色算法，计算颜色数组
     NSArray *curColor = nil;
@@ -166,39 +144,11 @@
 
 //根据图片获取图片的主色调
 + (UIColor *)mostColorSingle:(UIImage*)image{
-    // 1.此处缩放图片，缩小图片大小，提升计算速度
-    CGFloat scale = [UIScreen mainScreen].scale;
     CGSize thumbSize = CGSizeMake(kImgW, image.size.height/image.size.width*kImgW);
-    UIGraphicsBeginImageContextWithOptions(thumbSize, NO, scale);
-    [image drawInRect:CGRectMake(0, 0, thumbSize.width, thumbSize.height)];
-    image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    
-    // 2.将图片通过颜色空间转换为二进制数据。
-    int bitmapInfo = kCGBitmapByteOrderDefault | kCGImageAlphaPremultipliedLast;
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-    CGContextRef context = CGBitmapContextCreate(NULL,
-                                                 thumbSize.width,
-                                                 thumbSize.height,
-                                                 8,//bits per component
-                                                 thumbSize.width*4,
-                                                 colorSpace,
-                                                 bitmapInfo);
-    
-    CGRect drawRect = CGRectMake(0, 0, thumbSize.width, thumbSize.height);
-    CGContextDrawImage(context, drawRect, image.CGImage);
-    CGColorSpaceRelease(colorSpace);
-    unsigned char* data = CGBitmapContextGetData (context);
+    unsigned char* data = [self dataFromImage:image thumbSize:thumbSize];
     if (data == NULL) return nil;
     
     NSUInteger LimitCount = 10; // 限制颜色数量，总颜色数量小于LimitCount则抛弃
-//    NSUInteger MaxCount = 0;
-//    NSMutableArray *colorArr = [NSMutableArray array];// 结果数组
-//
-//    // NSCountedSet 是主要耗时的原因，由于要计算每个颜色的数量，故采用
-//    NSCountedSet *moreCls = [NSCountedSet setWithCapacity:thumbSize.width*thumbSize.height*0.25];
-//    NSCountedSet *huarr =[NSCountedSet setWithCapacity:thumbSize.width*thumbSize.height*0.25];
-    
     NSCountedSet *cls = [NSCountedSet setWithCapacity:thumbSize.width*thumbSize.height];
     
     // 3.分析二进制数据，并创建每个像素对应的颜色（图片颜色空间）
@@ -219,7 +169,6 @@
             }
         }
     }
-    CGContextRelease(context);
     
    NSEnumerator *enumerator = [cls objectEnumerator];
    NSArray *curColor = nil;
@@ -236,5 +185,33 @@
     
 }
 
+// 通过图片生成图像颜色空间
++ (unsigned char*)dataFromImage:(UIImage*)image thumbSize:(CGSize)thumbSize {
+    // 1.此处缩放图片，缩小图片大小，提升计算速度
+    CGFloat scale = [UIScreen mainScreen].scale;
+    UIGraphicsBeginImageContextWithOptions(thumbSize, NO, scale);
+    [image drawInRect:CGRectMake(0, 0, thumbSize.width, thumbSize.height)];
+    image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    // 2.将图片通过颜色空间转换为二进制数据。
+    int bitmapInfo = kCGBitmapByteOrderDefault | kCGImageAlphaPremultipliedLast;
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGContextRef context = CGBitmapContextCreate(NULL,
+                                                 thumbSize.width,
+                                                 thumbSize.height,
+                                                 8,//bits per component
+                                                 thumbSize.width*4,
+                                                 colorSpace,
+                                                 bitmapInfo);
+    
+    CGRect drawRect = CGRectMake(0, 0, thumbSize.width, thumbSize.height);
+    CGContextDrawImage(context, drawRect, image.CGImage);
+    CGColorSpaceRelease(colorSpace);
+    unsigned char* data = CGBitmapContextGetData (context);
+    CGContextRelease(context);
+    
+    return data;
+}
 
 @end
