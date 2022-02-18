@@ -12,8 +12,34 @@
 //根据图片获取图片的主色调
 + (NSMutableArray *)mostColor:(UIImage*)image{
     CGSize thumbSize = CGSizeMake(kImgW, image.size.height/image.size.width*kImgW);
-    unsigned char* data = [self dataFromImage:image thumbSize:thumbSize];
-    if (data == NULL) return nil;
+    
+    // 1.此处缩放图片，缩小图片大小，提升计算速度
+    CGFloat scale = [UIScreen mainScreen].scale;
+    UIGraphicsBeginImageContextWithOptions(thumbSize, NO, scale);
+    [image drawInRect:CGRectMake(0, 0, thumbSize.width, thumbSize.height)];
+    image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    // 2.将图片通过颜色空间转换为二进制数据。
+    int bitmapInfo = kCGBitmapByteOrderDefault | kCGImageAlphaPremultipliedLast;
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGContextRef context = CGBitmapContextCreate(NULL,
+                                                 thumbSize.width,
+                                                 thumbSize.height,
+                                                 8,//bits per component
+                                                 thumbSize.width*4,
+                                                 colorSpace,
+                                                 bitmapInfo);
+    
+    CGRect drawRect = CGRectMake(0, 0, thumbSize.width, thumbSize.height);
+    CGContextDrawImage(context, drawRect, image.CGImage);
+    CGColorSpaceRelease(colorSpace);
+    unsigned char* data = CGBitmapContextGetData (context);
+    
+    if (data == NULL){
+        CGContextRelease(context);
+        return nil;
+    };
     
     NSUInteger LimitCount = 5; // 限制颜色数量，总颜色数量小于LimitCount则抛弃
 //    NSUInteger MaxCount = 0;
@@ -145,48 +171,7 @@
 //根据图片获取图片的主色调
 + (UIColor *)mostColorSingle:(UIImage*)image{
     CGSize thumbSize = CGSizeMake(kImgW, image.size.height/image.size.width*kImgW);
-    unsigned char* data = [self dataFromImage:image thumbSize:thumbSize];
-    if (data == NULL) return nil;
     
-    NSUInteger LimitCount = 10; // 限制颜色数量，总颜色数量小于LimitCount则抛弃
-    NSCountedSet *cls = [NSCountedSet setWithCapacity:thumbSize.width*thumbSize.height];
-    
-    // 3.分析二进制数据，并创建每个像素对应的颜色（图片颜色空间）
-    for (int x = 0; x < thumbSize.width; x ++) {
-        for (int y = 0; y < thumbSize.height; y ++) {
-            int offset = 4 * (x * y);
-            int red = data[offset];
-            int green = data[offset+1];
-            int blue = data[offset+2];
-            int alpha =  data[offset+3];
-        
-            // 过滤掉白色
-            if (red!=255 & green!=255 & blue!=255) {
-                NSArray *clr = @[@(red),@(green),@(blue),@(alpha)];
-                // 当前颜色数量超过限制后，不再加入cls集合，如果需要计算最多颜色数量，则需要加入每一个大于LimitCount的颜色
-                if ([cls containsObject:clr] >= LimitCount)continue;
-                [cls addObject:clr];
-            }
-        }
-    }
-    
-   NSEnumerator *enumerator = [cls objectEnumerator];
-   NSArray *curColor = nil;
-   NSArray *MaxColor=nil;
-   NSUInteger MaxCount=0;
-   while ( (curColor = [enumerator nextObject]) != nil ){
-       NSUInteger tmpCount = [cls countForObject:curColor];
-       if (tmpCount < MaxCount) continue;
-        MaxCount=tmpCount;
-        MaxColor=curColor;
-    }
-    
-    return [UIColor colorWithRed:([MaxColor[0]intValue]/255.0f)green:([MaxColor[1]intValue]/255.0f)blue:([MaxColor[2]intValue]/255.0f)alpha:([MaxColor[3]intValue]/255.0f)];
-    
-}
-
-// 通过图片生成图像颜色空间
-+ (unsigned char*)dataFromImage:(UIImage*)image thumbSize:(CGSize)thumbSize {
     // 1.此处缩放图片，缩小图片大小，提升计算速度
     CGFloat scale = [UIScreen mainScreen].scale;
     UIGraphicsBeginImageContextWithOptions(thumbSize, NO, scale);
@@ -209,9 +194,47 @@
     CGContextDrawImage(context, drawRect, image.CGImage);
     CGColorSpaceRelease(colorSpace);
     unsigned char* data = CGBitmapContextGetData (context);
-    CGContextRelease(context);
     
-    return data;
+    if (data == NULL){
+        CGContextRelease(context);
+        return nil;
+    };
+    
+    NSUInteger LimitCount = 10; // 限制颜色数量，总颜色数量小于LimitCount则抛弃
+    NSCountedSet *cls = [NSCountedSet setWithCapacity:thumbSize.width*thumbSize.height];
+    
+    // 3.分析二进制数据，并创建每个像素对应的颜色（图片颜色空间）
+    for (int x = 0; x < thumbSize.width; x ++) {
+        for (int y = 0; y < thumbSize.height; y ++) {
+            int offset = 4 * (x * y);
+            int red = data[offset];
+            int green = data[offset+1];
+            int blue = data[offset+2];
+            int alpha =  data[offset+3];
+        
+            // 过滤掉白色
+            if (red!=255 & green!=255 & blue!=255) {
+                NSArray *clr = @[@(red),@(green),@(blue),@(alpha)];
+                // 当前颜色数量超过限制后，不再加入cls集合，如果需要计算最多颜色数量，则需要加入每一个大于LimitCount的颜色
+                if ([cls containsObject:clr] >= LimitCount)continue;
+                [cls addObject:clr];
+            }
+        }
+    }
+    CGContextRelease(context);
+   NSEnumerator *enumerator = [cls objectEnumerator];
+   NSArray *curColor = nil;
+   NSArray *MaxColor=nil;
+   NSUInteger MaxCount=0;
+   while ( (curColor = [enumerator nextObject]) != nil ){
+       NSUInteger tmpCount = [cls countForObject:curColor];
+       if (tmpCount < MaxCount) continue;
+        MaxCount=tmpCount;
+        MaxColor=curColor;
+    }
+    
+    return [UIColor colorWithRed:([MaxColor[0]intValue]/255.0f)green:([MaxColor[1]intValue]/255.0f)blue:([MaxColor[2]intValue]/255.0f)alpha:([MaxColor[3]intValue]/255.0f)];
+    
 }
 
 @end
